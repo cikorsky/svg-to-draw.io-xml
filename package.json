@@ -1,5 +1,5 @@
 {
-  "name": "svg-to-stencil",
+  "name": "svg-to-draw.io-xml",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,18 +9,25 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "lucide-react": "^0.577.0",
     "next": "16.1.6",
+    "pako": "^2.1.0",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "svg-path-parser": "^1.1.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pako": "^2.0.4",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/svg-path-parser": "^1.1.6",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "jsdom": "^28.1.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.18"
   }
 }

@@ -30,6 +30,44 @@ export default function Home() {
     removeColors: true,
     fixAspect: true
   });
+  const [manualSvgName, setManualSvgName] = useState("");
+  const [manualSvgCode, setManualSvgCode] = useState("");
+
+  const handleAddManualSvg = () => {
+    if (!manualSvgCode.trim()) return;
+
+    if (!manualSvgCode.toLowerCase().includes("<svg") || !manualSvgCode.toLowerCase().includes("</svg>")) {
+      alert("请输入有效的 SVG 代码 (需包含 <svg> 标签)");
+      return;
+    }
+
+    const name = manualSvgName.trim() || `icon-${Math.random().toString(36).substr(2, 4)}`;
+    const id = Date.now().toString() + "-manual-" + Math.random().toString(36).substr(2, 5);
+
+    let sanitizedSvg = "";
+    let stencilXml = "";
+    let w = 100;
+    let h = 100;
+    let error = undefined;
+
+    try {
+      sanitizedSvg = sanitizeSvg(manualSvgCode, { removeColors: settings.removeColors });
+      const result = convertSvgToStencil(sanitizedSvg, { name });
+      stencilXml = result.xml;
+      w = result.w;
+      h = result.h;
+    } catch (err: any) {
+      error = err.message;
+    }
+
+    setItems((prev) => [
+      ...prev,
+      { id, name, originalSvg: manualSvgCode, sanitizedSvg, stencilXml, w, h, error }
+    ]);
+
+    setManualSvgName("");
+    setManualSvgCode("");
+  };
 
   // Re-process items when settings change
   useEffect(() => {
@@ -165,204 +203,232 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 p-4 md:p-8 font-sans selection:bg-indigo-100">
-      <div className="max-w-5xl mx-auto space-y-10 mt-8">
-        {/* Header */}
-        <header className="text-center space-y-4">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
-            SVG 转 Draw.io 转换器
-          </h1>
-          <p className="text-slate-500 text-lg max-w-2xl mx-auto">
-            将 SVG 文件完美转换为 Draw.io 的库组件。拖放文件即可开始，支持批量处理与自动去色。
-          </p>
-        </header>
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 p-4 font-sans selection:bg-indigo-100 flex flex-col items-center">
+      <div className="w-full max-w-7xl flex-1 flex flex-col lg:flex-row gap-6 mt-4">
 
-        {/* Action Bar / Settings */}
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/60 flex flex-wrap items-center justify-center gap-8">
-          <label className="flex items-center gap-3 cursor-pointer group">
-            <div className="relative inline-flex items-center">
-              <input
-                type="checkbox"
-                className="sr-only peer"
-                checked={settings.removeColors}
-                onChange={(e) => setSettings({ ...settings, removeColors: e.target.checked })}
-              />
-              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-            </div>
-            <span className="text-sm font-semibold text-slate-600 group-hover:text-slate-900 transition">去除原生配色 (适配 Draw.io)</span>
-          </label>
-          <label className="flex items-center gap-3 cursor-pointer group">
-            <div className="relative inline-flex items-center">
-              <input
-                type="checkbox"
-                className="sr-only peer"
-                checked={settings.fixAspect}
-                onChange={(e) => setSettings({ ...settings, fixAspect: e.target.checked })}
-              />
-              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-            </div>
-            <span className="text-sm font-semibold text-slate-600 group-hover:text-slate-900 transition">锁定长宽比</span>
-          </label>
-        </div>
+        {/* Left Column: Fixed controls & Upload */}
+        <div className="w-full lg:w-[380px] flex flex-col gap-6 shrink-0">
 
-        {/* Upload Zone */}
-        <label
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          className={`relative cursor-pointer flex flex-col items-center justify-center w-full h-56 border-2 border-dashed rounded-3xl transition-all duration-300 bg-white shadow-sm hover:shadow-md ${isDragging ? "border-indigo-500 bg-indigo-50/50 scale-[0.99]" : "border-slate-300 hover:border-indigo-400 hover:bg-slate-50/50"
-            }`}
-        >
-          <div className="flex flex-col items-center justify-center">
-            <div className={`p-4 rounded-full mb-4 transition-colors ${isDragging ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-400'}`}>
-              <UploadCloud className="w-8 h-8" />
-            </div>
-            <p className="text-base text-slate-600 mb-1">
-              <span className="font-bold text-indigo-600">点击上传文件</span> 或将 SVG 拖放到这里
+          {/* Header */}
+          <header className="space-y-2">
+            <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center gap-2">
+              <Layers className="w-8 h-8 text-indigo-600" />
+              SVG to Draw.io XML
+            </h1>
+            <p className="text-slate-500 text-sm">
+              批量、纯离线转换 SVG 为 Draw.io XML格式的可变色图库
             </p>
-            <p className="text-xs text-slate-400">支持批量选择多个 .svg 文件</p>
-          </div>
-          <input type="file" className="hidden" multiple accept=".svg" onChange={handleFileChange} />
-        </label>
+          </header>
 
-        {/* Preview Grid */}
-        {items.length > 0 && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center justify-between px-2">
-              <h2 className="text-lg font-bold text-slate-800">已处理图标 ({items.length})</h2>
-              <button
-                onClick={() => setItems([])}
-                className="text-sm font-semibold text-slate-400 hover:text-red-500 transition-colors"
-              >
-                清空全部
-              </button>
+          {/* Action Bar / Settings */}
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200/60 flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-slate-700 text-sm flex items-center gap-1.5"><Settings2 className="w-4 h-4" /> 转换设置</h3>
             </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {items.map((item) => (
-                <div key={item.id} className="group relative bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-lg hover:shadow-slate-200/50 hover:border-indigo-200 transition-all duration-300 flex flex-col items-center p-4">
-                  {/* Actions */}
-                  <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all transform scale-90 group-hover:scale-100 z-10">
-                    <button
-                      onClick={(e) => { e.preventDefault(); copyToClipboard(item.stencilXml, item.id); }}
-                      className="p-1.5 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-all"
-                      title="复制 Stencil 代码"
-                    >
-                      {copiedId === item.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
-                    </button>
-                    <button
-                      onClick={(e) => { e.preventDefault(); removeItem(item.id); }}
-                      className="p-1.5 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
-                      title="移除"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-
-                  <div className="flex-1 w-full flex items-center justify-center aspect-square mb-3 relative overflow-hidden">
-                    {item.error ? (
-                      <div className="text-[10px] text-red-500 font-semibold text-center leading-tight">解析失败</div>
-                    ) : (
-                      <>
-                        <div className="absolute inset-0 opacity-[0.02] bg-[linear-gradient(45deg,#000_25%,transparent_25%,transparent_50%,#000_50%,#000_75%,transparent_75%,transparent)] bg-[length:8px_8px] rounded-xl"></div>
-                        <div
-                          className={`w-12 h-12 flex items-center justify-center transition-transform group-hover:scale-110 duration-500 ${settings.removeColors ? '[&_svg]:fill-slate-800 [&_svg]:stroke-slate-800' : ''}`}
-                          dangerouslySetInnerHTML={{ __html: item.sanitizedSvg }}
-                        />
-                      </>
-                    )}
-                  </div>
-
-                  <div className="w-full text-center border-t border-slate-100 pt-3">
-                    <span className="text-xs font-semibold text-slate-600 truncate block w-full px-1" title={item.name}>
-                      {item.name}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Bottom Generate Button */}
-            <div className="flex justify-center pt-8 pb-12">
-              <button
-                onClick={handleDownload}
-                className="w-full md:w-auto px-10 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-lg shadow-indigo-200 flex items-center justify-center gap-3 text-lg font-bold transform hover:-translate-y-1"
-              >
-                <FileDown className="w-6 h-6" />
-                生成 Draw.io 图库 (.xml)
-              </button>
-            </div>
-          </div>
-        )}
-
-        {items.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 opacity-60 pointer-events-none">
-            <Layers className="w-16 h-16 text-slate-300 mb-4" />
-            <p className="text-slate-400 font-medium text-center">当前暂无图标，请上传上方区域</p>
-          </div>
-        )}
-
-        {/* Instructions & Features Guide */}
-        <div className="mt-16 space-y-6">
-          <div className="flex items-center gap-2 px-2">
-            <Info className="w-5 h-5 text-indigo-500" />
-            <h2 className="text-lg font-bold text-slate-800">使用指南与技巧</h2>
+            <label className="flex items-center justify-between cursor-pointer group">
+              <span className="text-sm font-medium text-slate-600 group-hover:text-slate-900 transition">去除原生配色 (适配 Draw.io)</span>
+              <div className="relative inline-flex items-center">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={settings.removeColors}
+                  onChange={(e) => setSettings({ ...settings, removeColors: e.target.checked })}
+                />
+                <div className="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+              </div>
+            </label>
+            <label className="flex items-center justify-between cursor-pointer group">
+              <span className="text-sm font-medium text-slate-600 group-hover:text-slate-900 transition">锁定长宽比</span>
+              <div className="relative inline-flex items-center">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={settings.fixAspect}
+                  onChange={(e) => setSettings({ ...settings, fixAspect: e.target.checked })}
+                />
+                <div className="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+              </div>
+            </label>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Step 1 */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60 flex flex-col gap-4 hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 mb-2">
-                <MousePointer2 className="w-6 h-6" />
-              </div>
-              <h3 className="font-bold text-slate-800 text-lg">1. 拖入并生成</h3>
-              <p className="text-slate-500 text-sm leading-relaxed">
-                将任意 SVG 图标（支持批量）拖入上方虚线框中。预览无误后，点击底部大按钮下载 <b>.xml</b> 结尾的 draw.io 定制图库文件。
-              </p>
+          {/* Upload & Paste Zone */}
+          <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/60 flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <h3 className="font-bold text-slate-800 text-base">上传或粘贴 SVG</h3>
+              <p className="text-xs text-slate-500">选择以下两种方式之一添加 SVG：</p>
             </div>
 
-            {/* Step 2 */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60 flex flex-col gap-4 hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 mb-2">
-                <ArrowRightCircle className="w-6 h-6" />
-              </div>
-              <h3 className="font-bold text-slate-800 text-lg">2. 导入 Draw.io 应用</h3>
-              <p className="text-slate-500 text-sm leading-relaxed">
-                打开您的 draw.io 画布，直接将下载好的 <b>.xml 库文件</b>拖入网页即可自动载入。或者通过左侧面板的 <b>文件 &gt; 导入自</b> 进行手动加载。
-              </p>
-            </div>
-
-            {/* Step 3 */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60 flex flex-col gap-4 hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 mb-2">
-                <Sparkles className="w-6 h-6" />
-              </div>
-              <h3 className="font-bold text-slate-800 text-lg">3. 色彩自由调控</h3>
-              <p className="text-slate-500 text-sm leading-relaxed">
-                勾选上方的 <b>“去除原生配色”</b> 生成单色黑底图标。这样当它进入 draw.io 后，您可以在右侧样式面板中像原生图形一样随心修改填充与边框颜色！
-              </p>
-            </div>
-
-            {/* Notice */}
-            <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-6 rounded-2xl border border-slate-200/60 md:col-span-2 lg:col-span-3 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-              <div className="p-3 bg-white rounded-full shadow-sm">
-                <AlertCircle className="w-6 h-6 text-slate-400" />
-              </div>
-              <div>
-                <h4 className="font-bold text-slate-700 mb-1">小贴士</h4>
-                <p className="text-slate-500 text-sm">
-                  当您的单个图标特别复杂或者想临时测试单图时，可以直接将鼠标悬停在上方生成的卡片上，点击右上角的 <b>复制按钮</b> 获取单体 Stencil 代码。在 draw.io 中，使用 <b>调整形状 &gt; 编辑形状 (Ctrl+E)</b> 粘贴代码即可立即预览。
+            {/* Method 1: File Upload */}
+            <label
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`cursor-pointer flex flex-col items-center justify-center w-full py-5 border-2 border-dashed rounded-xl transition-all duration-300 ${isDragging ? "border-indigo-500 bg-indigo-50/50" : "border-slate-300 hover:border-indigo-400 bg-slate-50/50 hover:bg-slate-50"}`}
+            >
+              <div className="flex flex-col items-center justify-center text-center px-4">
+                <p className="text-sm text-slate-600 flex items-center gap-2">
+                  <UploadCloud className="w-4 h-4 text-indigo-500" />拖拽或 <span className="font-bold text-indigo-600">点击上传</span> 文件
                 </p>
               </div>
+              <input type="file" className="hidden" multiple accept=".svg" onChange={handleFileChange} />
+            </label>
+
+            {/* Method 2: Manual Paste */}
+            <div className="flex flex-col gap-3 py-2 border-t border-slate-100">
+              <input
+                type="text"
+                placeholder="输入 SVG 名称"
+                className="w-full text-sm placeholder:text-slate-400 text-slate-700 border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
+                value={manualSvgName}
+                onChange={(e) => setManualSvgName(e.target.value)}
+              />
+
+              <textarea
+                placeholder="<svg>...</svg>"
+                className="w-full text-sm placeholder:text-slate-400 text-slate-700 border border-slate-200 rounded-lg px-3 py-3 h-32 resize-none custom-scrollbar focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition font-mono whitespace-pre"
+                value={manualSvgCode}
+                onChange={(e) => setManualSvgCode(e.target.value)}
+                spellCheck={false}
+              />
+
+              <button
+                onClick={handleAddManualSvg}
+                disabled={!manualSvgCode.trim()}
+                className="w-full py-2.5 bg-[#8b5cf6] text-white hover:bg-[#7c3aed] disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed rounded-lg text-sm font-bold transition flex justify-center items-center gap-2 shadow-sm"
+              >
+                <Code2 className="w-4 h-4" />
+                添加 SVG 代码
+              </button>
+            </div>
+          </div>
+
+          {/* Generate Button Fixed to Left Side */}
+          <button
+            onClick={handleDownload}
+            disabled={items.length === 0}
+            className={`w-full py-3.5 rounded-xl shadow-[0_4px_14px_0_rgba(79,70,229,0.39)] flex items-center justify-center gap-2 text-base font-bold transition-all duration-300 ${items.length > 0
+              ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 transform hover:-translate-y-0.5'
+              : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+              }`}
+          >
+            <FileDown className="w-5 h-5" />
+            生成图库 (.xml) {items.length > 0 && `(${items.length})`}
+          </button>
+        </div>
+
+        {/* Right Column: Preview Grid & Instructions */}
+        <div className="flex-1 flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden min-h-[500px] xl:max-h-[calc(100vh-100px)]">
+          {items.length > 0 ? (
+            <div className="flex flex-col h-full">
+              <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-slate-50/50 shrink-0">
+                <h2 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                  <SearchCode className="w-4 h-4 text-indigo-500" />
+                  已处理图标预览
+                </h2>
+                <button
+                  onClick={() => setItems([])}
+                  className="text-xs font-semibold text-slate-400 hover:text-red-500 transition-colors flex items-center gap-1"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> 清空
+                </button>
+              </div>
+
+              {/* Scrollable grid area */}
+              <div className="p-5 overflow-y-auto flex-1 custom-scrollbar" style={{ maxHeight: '100%' }}>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-7 gap-3">
+                  {items.map((item) => (
+                    <div key={item.id} className="group relative bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-300 flex flex-col items-center p-2">
+                      {/* Actions */}
+                      <div className="absolute top-1 right-1 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-all transform scale-90 group-hover:scale-100 z-10">
+                        <button
+                          onClick={(e) => { e.preventDefault(); copyToClipboard(item.stencilXml, item.id); }}
+                          className="p-1 bg-white shadow-[0_2px_4px_rgba(0,0,0,0.1)] text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-all"
+                          title="复制 Stencil 代码"
+                        >
+                          {copiedId === item.id ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                        </button>
+                        <button
+                          onClick={(e) => { e.preventDefault(); removeItem(item.id); }}
+                          className="p-1 bg-white shadow-[0_2px_4px_rgba(0,0,0,0.1)] text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-all"
+                          title="移除"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+
+                      <div className="w-full flex items-center justify-center aspect-square mb-2 relative overflow-hidden">
+                        {item.error ? (
+                          <div className="text-[10px] text-red-500 font-semibold text-center leading-tight break-all px-1">{item.error}</div>
+                        ) : (
+                          <>
+                            <div className="absolute inset-0 opacity-[0.02] bg-[linear-gradient(45deg,#000_25%,transparent_25%,transparent_50%,#000_50%,#000_75%,transparent_75%,transparent)] bg-[length:6px_6px] rounded-lg"></div>
+                            <div
+                              className={`w-8 h-8 flex items-center justify-center transition-transform group-hover:scale-110 duration-500 ${settings.removeColors ? '[&_svg]:fill-slate-800 [&_svg]:stroke-slate-800' : ''}`}
+                              dangerouslySetInnerHTML={{ __html: item.sanitizedSvg }}
+                            />
+                          </>
+                        )}
+                      </div>
+
+                      <div className="w-full text-center border-t border-slate-100 pt-1.5">
+                        <span className="text-[10px] font-medium text-slate-500 truncate block w-full px-1" title={item.name}>
+                          {item.name}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 opacity-60 pointer-events-none select-none">
+              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
+                <Layers className="w-8 h-8 text-slate-300" />
+              </div>
+              <p className="text-slate-400 font-medium text-sm">左侧上传后，在此极速预览所有图标</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Footer Instructions (Full Width below the split layout) */}
+      <div className="w-full max-w-7xl mt-6 space-y-4">
+        <div className="flex items-center gap-2 px-1">
+          <Info className="w-4 h-4 text-indigo-500" />
+          <h2 className="text-sm font-bold text-slate-700">快速上手指南</h2>
+        </div>
+
+        <div className="grid md:grid-cols-4 gap-4">
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200/50 flex gap-3 items-start">
+            <MousePointer2 className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-bold text-slate-800 text-sm mb-1">1. 批量上传</h3>
+              <p className="text-slate-500 text-xs leading-relaxed">支持多选或拖入 SVG 图标集。所有操作在本地毫秒级完成，保护隐私。</p>
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200/50 flex gap-3 items-start">
+            <ArrowRightCircle className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-bold text-slate-800 text-sm mb-1">2. 导出图库</h3>
+              <p className="text-slate-500 text-xs leading-relaxed">获取生成的 <code>.xml</code> 文件后，直接拖入 <b>draw.io</b> 网页画布即可载入侧边栏。</p>
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200/50 flex gap-3 items-start">
+            <Sparkles className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-bold text-slate-800 text-sm mb-1">3. 控制色彩</h3>
+              <p className="text-slate-500 text-xs leading-relaxed">开启"去除原生配色"即可转换出支持原生 <code>fill</code> 换色的单色纯净 SVG。</p>
+            </div>
+          </div>
+          <div className="bg-gradient-to-br from-indigo-50 to-white p-4 rounded-xl shadow-sm border border-indigo-100 flex gap-3 items-start">
+            <Copy className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-bold text-indigo-900 text-sm mb-1">单体急救</h3>
+              <p className="text-indigo-700/80 text-xs leading-relaxed">悬停预览图点 <b>复制</b>，在此后按 <code>Ctrl+E</code> 粘贴至 Draw.io 的 <b>编辑形状</b> 中即可。</p>
             </div>
           </div>
         </div>
       </div>
-
-      <footer className="max-w-5xl mx-auto mt-12 pt-8 border-t border-slate-200/60 text-center pb-8">
-        <p className="text-slate-400 text-sm font-medium">SVG to Draw.io 转换器</p>
-        <p className="text-slate-400 mt-1 text-xs">本地完全离线处理，保障您的隐私安全</p>
-      </footer>
     </div>
   );
 }

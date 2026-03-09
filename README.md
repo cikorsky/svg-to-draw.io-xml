@@ -1,36 +1,76 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
+  <img src="./public/assets/logo.svg" width="80" alt="SVG to Draw.io Logo"/>
+  <h1>SVG to Draw.io XML</h1>
+  <p>批量、纯离线转换 SVG 为 Draw.io XML 格式的可变色图库</p>
+</div>
 
-## Getting Started
+![界面截图](./public/assets/screenshot.png)
 
-First, run the development server:
+---
+一款现代化的 Web 工具，基于 Next.js 开发，旨在将 SVG 图标完美转换为 draw.io (diagrams.net) 原生支持的可变色形状库 (.xml)，或一键提取单体剪贴板代码。
+
+无论你是想要将设计工具中的图标库（如 Iconfont、Figma 导出的 SVG）批量整合为团队内部使用的 draw.io 资产，还是日常临时转换个别图标，本工具都能提供极速、安全、无缝的体验。
+
+## ✨ 核心特性
+
+- **🚀 极简交互，双重导入** 
+  - 支持单文件或批量 SVG **拖拽/点击上传**。
+  - 支持 **直接手动粘贴 SVG 代码**，适应快速跨应用（如从 VS Code 或设计工具中直接 C/V 代码）操作的场景。
+- **🧹 智能清洗与去色**
+  - 自动移除冗余标签和属性（例如 iconfont 的特有 class 或多余的全局外框）。
+  - 支持一键 **去除原生配色**，从而在 draw.io 内部可以使用原生 Fill (填充色) 和 Stroke (描边色) 功能随意更改图标颜色。
+  - 支持智能锁定图库元素的长宽比。
+- **🎨 高保真路径解析**
+  - 完整支持所有物理路径指令（`M`, `L`, `H`, `V`, `C`, `S`, `Q`, `T`, `A`）。
+  - 完美兼容弧线与多阶贝塞尔曲线，保障图标在 draw.io 中的像素级还原。
+- **📦 灵活的一键输出**
+  - **下载标准图库**：一键生成经过 DEFLATE 压缩标准编码的 `.xml` 文件，这正是 draw.io 支持的原生侧边栏图库格式。
+  - **单体急救粘贴**：支持在预览界面悬浮点击“复制”，随后在 draw.io 画布中按下 `Ctrl+E`（编辑形状）并直接粘贴 XML 代码。
+- **🔒 绝对的隐私安全**
+  - **纯纯的静态离线工具**，100% 在本地浏览器计算与转换。
+  - 你的 SVG 数据永远不会被上传到任何后台服务器，无惧保密项目图标泄漏。
+
+## 🛠️ 技术栈与依赖
+
+- **前端架构**: Next.js (App Router) + React + TypeScript
+- **UI 设计与样式**: Tailwind CSS + Lucide Icons (图标)
+- **核心算法依赖**: 
+  - [`pako`](https://www.npmjs.com/package/pako) (处理向 xml 格式封装时的 DEFLATE 压缩与 base64 编码)
+  - [`svg-path-parser`](https://www.npmjs.com/package/svg-path-parser) (进行 SVG 路径的 AST 取树与解析)
+  - 浏览器的原生 `DOMParser` 用于安全的 HTML/XML 节点遍历和清理。
+
+## 🚀 部署指南
+
+### 本地开发运行
 
 ```bash
+# 1. 安装依赖
+npm install
+
+# 2. 启动本地开发服务器
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# 3. 浏览器访问 http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Docker 容器部署 (推荐)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+我们提供了多阶段构建的 `Dockerfile`，构建出的镜像极小且已在生产环境级别优化。
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**使用 Docker Compose 快速启动**:
+```bash
+docker-compose up -d
+```
+启动后即可通过 `http://localhost:3000` 访问服务。
 
-## Learn More
+## 📜 鸣谢与参考资料
 
-To learn more about Next.js, take a look at the following resources:
+本项目的核心转换逻辑与图形学算法在开发过程中参考了以下开源库与规范：
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- 核心算法启发: [mmunozba/svgtodrawio](https://github.com/mmunozba/svgtodrawio)
+- 压缩逻辑解析: [mxlibrary 协议解析](https://blog.csdn.net/tiger9991/article/details/143184081)
+- 官方图库标准规范: [Draw.io Stencil Specs](https://github.com/jgraph/drawio-libs)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## ⚖️ 开源协议
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+本项目基于 **MIT** 协议开源。你可以自由地使用、修改和分发，但也请保留原作者的版权声明。
