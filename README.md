@@ -63,6 +63,31 @@ docker-compose up -d
 ```
 启动后即可通过 `http://localhost:3000` 访问服务。
 
+### QNAP NAS 部署 (Container Station)
+
+为了方便在 QNAP NAS 设备上纯离线部署，本项目支持一键封包导出为针对不同 CPU 架构（如 Intel/AMD 或 ARM）的离线 Docker 镜像。
+
+#### 1. 打包离线镜像文件
+在你的电脑控制台根目录下运行封包脚本：
+```bash
+# 修改权限（首次运行）
+chmod +x build-for-qnap.sh
+
+# 为主流 Intel Core / AMD64 架构 NAS 编译打包
+./build-for-qnap.sh linux/amd64
+
+# (可选) 为 ARM 架构 NAS 编译打包
+# ./build-for-qnap.sh linux/arm64
+```
+等待编译完成后，你会在项目目录中得到一个 `svg-to-drawio-image-0.1.0.tar` 文件。
+
+#### 2. 在 NAS 导入并运行
+1. 打开 QNAP NAS 的 **Container Station (容器工作站)**。
+2. 左侧菜单点击 **“映像 (Images)”** -> 右上角 **“导入 (Import)”**，上传刚才生成的 `.tar` 文件。
+3. 导入完成后，左侧点击 **“应用程序 (Applications)”** -> 右上角 **“创建 (Create)”**。
+4. 将本项目下的 `docker-compose.prod.yml` 文件内容完全粘贴进去（如有端口冲突请自行修改映射）。
+5. 验证并创建后，打开游览器访问 `http://<NAS_IP>:3000` 即可使用。
+
 ## 📜 鸣谢与参考资料
 
 本项目的核心转换逻辑与图形学算法在开发过程中参考了以下开源库与规范：

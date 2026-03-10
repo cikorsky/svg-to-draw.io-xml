@@ -1,9 +1,6 @@
 services:
   svg-to-drawio:
-    image: svg-to-drawio:latest
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: svg-to-drawio:0.1.0
     container_name: svg-to-drawio
     ports:
       - "3000:3000"

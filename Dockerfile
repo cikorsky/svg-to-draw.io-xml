@@ -37,6 +37,7 @@ USER nextjs
 
 EXPOSE 3000
 ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
 
 # 运行 standalone 模式
 CMD ["node", "server.js"]
