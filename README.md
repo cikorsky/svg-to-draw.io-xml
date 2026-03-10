@@ -39,6 +39,34 @@
   - [`svg-path-parser`](https://www.npmjs.com/package/svg-path-parser) (进行 SVG 路径的 AST 取树与解析)
   - 浏览器的原生 `DOMParser` 用于安全的 HTML/XML 节点遍历和清理。
 
+## 🧠 项目架构与技术原理解析
+
+本项目采用现代的前端构建方案，无需借助任何 Node.js 后端服务或外部 API 获取支持，图形的所有处理及文件封包皆**在用户的浏览器环境局域范围内严格计算并输出**。
+
+### 核心目录结构
+\`\`\`text
+src/
+├── app/                  # Next.js App Router 目录 (入口页面、视图组件)
+│   ├── layout.tsx        # 整体布局定义与 Tailwind v4 全局预设引入
+│   └── page.tsx          # 单体主视觉页面及拖拽/输入交互控制器
+└── lib/                  # 包含核心图形转换、提取隔离与压缩打包逻辑引擎
+    ├── svg-sanitizer.ts  # 无用节点剥离与可选项（去色控制）净化器
+    ├── svg-to-stencil.ts # 原生 SVG AST 向量路径降级/扁平化转移器（适配生成 draw.io 自定义 xml）
+    └── packager.ts       # mxlibrary 压缩格式生成与 Base64 封包器
+\`\`\`
+
+### 转换原理流程详解
+
+本工具之所以能够做到“高保真”且让生成的图标表现和原生组件一致，是因为贯穿了以下三步流水线：
+
+1. **环境纯净度处理 (`svg-sanitizer.ts`)**
+   利用浏览器原生的 `DOMParser` 生成解析树，安全的剔除带有业务或设计软件特性的垃圾标签（如 `<title>`, `class`, 以及 Iconfont 为了对齐用的占位框等）。如果用户勾选了“去除原有配色”，分析器将会逐层遍历并强制移除所有具有特定十六进制或 RGB 颜色的 `fill` 与 `stroke` 属性，将其转换为无色状态等待 draw.io 从层级上下文继承颜色。
+2. **矢量几何重定向映射 (`svg-to-stencil.ts`)**
+   Draw.io 官方的 XML 并不支持直接输入 HTML `<svg>` 原生标签流，而是有着自己特有的一套图形绘制语法声明。
+   我们借助对几何路径极其敏感的 AST 解析器 (`svg-path-parser`) 将极其混乱或通过相对坐标 `m, c, a` 写出来的高阶曲线甚至残缺绘制命令，统一**扁平重算并降维转换**成纯绝对坐标值 `M, L, C, A` 等物理游标定位命令，并按其 `w` `h` 比例逐个包裹进原生的 `<shape><foreground><path>...</path></foreground></shape>` XML 指令流中。同时，自动为图形四个主要角落加上精准的 `<connections>` 连接控制锚点。
+3. **压缩入库封装 (`packager.ts`)**
+   最终通过官方支持的 `mxlibrary` 数据源挂载。这部分我们对图元做了一个 `pako` 的 Raw DEFLATE 流处理然后将其转化成了 `base64` 原生块以保证最大的传输容差和向后兼容。这解决了由于单体 svg 内容过大导致在 draw.io 一旦保存极易形成崩溃性读取的问题。
+
 ## 🚀 部署指南
 
 ### 本地开发运行
