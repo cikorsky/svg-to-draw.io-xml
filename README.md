@@ -44,7 +44,7 @@
 本项目采用现代的前端构建方案，无需借助任何 Node.js 后端服务或外部 API 获取支持，图形的所有处理及文件封包皆**在用户的浏览器环境局域范围内严格计算并输出**。
 
 ### 核心目录结构
-\`\`\`text
+```text
 src/
 ├── app/                  # Next.js App Router 目录 (入口页面、视图组件)
 │   ├── layout.tsx        # 整体布局定义与 Tailwind v4 全局预设引入
@@ -53,7 +53,7 @@ src/
     ├── svg-sanitizer.ts  # 无用节点剥离与可选项（去色控制）净化器
     ├── svg-to-stencil.ts # 原生 SVG AST 向量路径降级/扁平化转移器（适配生成 draw.io 自定义 xml）
     └── packager.ts       # mxlibrary 压缩格式生成与 Base64 封包器
-\`\`\`
+```
 
 ### 转换原理流程详解
 
